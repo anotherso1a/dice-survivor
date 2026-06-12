@@ -1,23 +1,22 @@
-[gd_scene format=3 uid="uid://b1dice01"]
+[gd_scene format=3 uid="uid://bheqsfr3qe3ac"]
 
 [ext_resource type="Script" uid="uid://qsfo1wi1otlf" path="res://scripts/entities/dice_entity.gd" id="1_dice"]
 
-[node name="Dice" type="Node2D" unique_id=1797305216]
+[node name="Dice" type="Node2D"]
 script = ExtResource("1_dice")
 
-[node name="Visual" type="Node2D" parent="." unique_id=886213945]
-scale = Vector2(2, 2)
+[node name="Visual" type="Node2D" parent="."]
+scale = Vector2(0.3, 0.3)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visual" unique_id=3517469281]
-centered = true
+[node name="Sprite2D" type="Sprite2D" parent="Visual"]
+texture_filter = 1
 
-[node name="SpinEffect" type="Node2D" parent="Visual" unique_id=1724390567]
-
-[node name="CooldownLabel" type="Label" parent="." unique_id=1608837005]
-offset_left = -15.0
-offset_top = 24.0
-offset_right = 15.0
-offset_bottom = 44.0
-theme_override_font_sizes/font_size = 14
-text = ""
-visible = false
+[node name="CooldownLabel" type="Label" parent="."]
+position = Vector2(0, 22)
+offset_right = 0.0
+offset_bottom = 0.0
+horizontal_alignment = 1
+vertical_alignment = 1
+grown_direction = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12

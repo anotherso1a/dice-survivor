@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/dice_upgrade_ui.gd" id="1_upgrade_ui"]
+
+[node name="DiceUpgradeUI" type="CanvasLayer"]
+visible = true
+layer = 127
+process_mode = 3
+script = ExtResource("1_upgrade_ui")
+
+[node name="Background" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BGColor" type="ColorRect" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+mouse_filter = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Background/CenterContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(620, 380)
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Background/CenterContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="Background/CenterContainer/Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "击杀里程碑！选择升级骰子（三选一）"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="Spacer" type="Control" parent="Background/CenterContainer/Panel/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 24)
+
+[node name="OptionContainer" type="GridContainer" parent="Background/CenterContainer/Panel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+columns = 3

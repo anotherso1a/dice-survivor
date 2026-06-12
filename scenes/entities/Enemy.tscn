@@ -160,8 +160,6 @@ autoplay = "idle"
 shape = SubResource("RectangleShape2D_enemy")
 
 [node name="Hitbox" type="Area2D" parent="." unique_id=1262521079]
-monitoring = true
-collision_mask = 1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox" unique_id=166369355]
 shape = SubResource("RectangleShape2D_hitbox")

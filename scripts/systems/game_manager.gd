@@ -6,6 +6,8 @@
 ## 管理游戏阶段切换：菜单 → 战斗 → 波次清空 → 升级 → 休息站 → BOSS → 结算
 ## 当前 MVP 阶段：MENU 和 BATTLE 阶段完整可用，其余留骨架。
 ##
+## 击杀升级触发：每击杀 3 只怪物，暂停游戏并弹出骰子三选一升级界面
+##
 extends Node
 
 
@@ -19,16 +21,42 @@ enum Phase {
 	GAME_OVER,      ## 死亡 / 通关
 }
 
+## 击杀升级触发间隔（每 N 杀触发一次升级选择）
+const KILL_UPGRADE_INTERVAL: int = 3
+
 
 @export_group("Debug")
 ## 当前阶段（只读查看）
 @export var current_phase: Phase = Phase.MENU
 
+## 上一次触发升级的击杀数（防止同一里程碑重复触发）
+var _last_upgrade_kill_count: int = 0
+
 
 func _ready() -> void:
-	# 游戏从主菜单启动，不自动进入战斗
-	# 当玩家点击"开始游戏"后，Main 场景加载，GameManager 由 Main 场景驱动
+	# 监听击杀数变化，每 3 杀触发升级
+	EventBus.kill_count_changed.connect(_on_kill_count_changed)
+	# 监听敌人死亡，递增击杀计数
+	EventBus.enemy_died.connect(_on_enemy_died)
 	print("🎮 GameManager 就绪，等待开始游戏")
+
+
+func _on_enemy_died(_pos: Vector2, _data) -> void:
+	## 敌人死亡，递增击杀计数（RunState.kill_count 的 setter 会自动发 kill_count_changed 信号）
+	RunState.kill_count += 1
+
+
+func _on_kill_count_changed(new_count: int) -> void:
+	## 每击杀 KILL_UPGRADE_INTERVAL 只怪物，触发一次升级选择
+	## 用 _last_upgrade_kill_count 防止同一里程碑重复触发
+	if new_count <= 0:
+		return
+	if new_count >= KILL_UPGRADE_INTERVAL and \
+	   new_count % KILL_UPGRADE_INTERVAL == 0 and \
+	   new_count != _last_upgrade_kill_count:
+		_last_upgrade_kill_count = new_count
+		print("🎲 击杀数达到 %d，触发骰子升级选择" % new_count)
+		transition_to(Phase.LEVEL_UP)
 
 
 ## 阶段切换（统一入口）
@@ -67,10 +95,40 @@ func _on_wave_clear() -> void:
 	## TODO M2：弹出三选一技能界面
 
 
-## 显示升级界面
+## 显示升级界面（暂停游戏，弹出骰子三选一）
 func _show_level_up() -> void:
-	## TODO M2：加载 SkillData 三选一
-	pass
+	print("⬆️  进入升级选择，游戏暂停")
+	get_tree().paused = true
+
+	# 加载骰子升级选择 UI
+	var ui_scene: PackedScene = load("res://scenes/ui/dice_upgrade_ui.tscn")
+	if ui_scene == null:
+		push_error("无法加载 res://scenes/ui/dice_upgrade_ui.tscn")
+		get_tree().paused = false
+		return
+
+	var ui: CanvasLayer = ui_scene.instantiate()
+	# 挂载到当前场景的根节点下
+	get_tree().current_scene.add_child(ui)
+	ui.dice_selected.connect(_on_dice_upgrade_selected)
+
+
+## 玩家选定升级骰子后，恢复游戏并将新骰子加入玩家
+func _on_dice_upgrade_selected(_dice_data: DiceData) -> void:
+	print("✅ 骰子升级完成：%s" % _dice_data.dice_name)
+	# 找到玩家节点，调用 add_dice 添加新骰子
+	var players: Array[Node] = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		var player: Node = players[0]
+		if player.has_method("add_dice"):
+			player.add_dice(_dice_data)
+		else:
+			push_error("Player 节点没有 add_dice 方法")
+	else:
+		push_error("找不到 player 组中的节点")
+	get_tree().paused = false
+	# 回到战斗阶段
+	transition_to(Phase.BATTLE)
 
 
 ## 进入休息站

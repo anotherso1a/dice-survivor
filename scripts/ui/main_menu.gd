@@ -57,6 +57,6 @@ func _on_quit_pressed() -> void:
 ## 标题呼吸灯动画 — 像素风微妙闪烁
 func _animate_title() -> void:
 	var tween := create_tween()
-	tween.set_loops()  # 无限循环
+	tween.set_loops(-1)  # -1 = 无限循环
 	tween.tween_property(_title_label, "modulate:a", 0.6, 1.5)
 	tween.tween_property(_title_label, "modulate:a", 1.0, 1.5)

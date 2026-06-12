@@ -21,8 +21,9 @@ extends CanvasLayer
 @onready var _hp_bar: TextureProgressBar = %HpBar
 @onready var _hp_label: Label = %HpLabel
 @onready var _coins_label: Label = %CoinsLabel
-@onready var _dice_label: Label = %DiceLabel
 @onready var _relic_badge: Label = %RelicBadge
+@onready var _dice_label: Label = %DiceLabel
+@onready var _dice_icon: TextureRect = %DiceIcon
 @onready var _instructions: Label = %Instructions
 @onready var _panel: Panel = %TopPanel
 
@@ -113,26 +114,33 @@ func _update_dice_quick_info() -> void:
 	if player == null:
 		return
 
-	# 尝试获取骰子槽位信息
-	if not player.has_method("get") and not "dice_slots" in player:
+	if not "dice_slots" in player:
 		return
 
-	var dice_slots: Array = player.get("dice_slots") if "dice_slots" in player else []
+	var dice_slots: Array = player.get("dice_slots")
 	var active_idx: int = player.get("active_dice_index") if "active_dice_index" in player else 0
 
 	if dice_slots.is_empty() or active_idx >= dice_slots.size():
 		_dice_label.text = "🎲 无骰子"
+		if _dice_icon != null:
+			_dice_icon.texture = null
 		return
 
-	var dice_node: Node2D = dice_slots[active_idx] as Node2D
+	var dice_node: Node2D = dice_slots[active_idx]
 	if dice_node == null or not is_instance_valid(dice_node):
 		_dice_label.text = "🎲 ---"
 		return
 
-	var dice_data: DiceData = dice_node.get("dice_data") if "dice_data" in dice_node else null
+	var dice_data: DiceData = dice_node.get("dice_data")
 	if dice_data == null:
 		_dice_label.text = "🎲 ---"
 		return
+
+	# 用 DiceFaceRenderer 渲染当前骰子第 0 面作为图标（传入材质）
+	if _dice_icon != null and not dice_data.combat_faces.is_empty():
+		var face: FaceData = dice_data.combat_faces[0]
+		var mat: DiceMaterial = dice_data.dice_material
+		_dice_icon.texture = DiceFaceRenderer.render(mat, face)
 
 	var cd: float = 0.0
 	if dice_node.has_method("get_cooldown_remaining"):
@@ -142,7 +150,7 @@ func _update_dice_quick_info() -> void:
 	var broken_str: String = " 💔" if dice_data.is_broken() else ""
 	var cd_str: String = "就绪" if cd <= 0 else "%.1fs" % cd
 
-	_dice_label.text = "🎲 %s%s  冷却:%s%s | [%d/%d]" % [
+	_dice_label.text = "%s%s  冷却:%s%s | [%d/%d]" % [
 		dice_data.dice_name,
 		elem_icon,
 		cd_str,

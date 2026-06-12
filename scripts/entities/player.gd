@@ -209,9 +209,9 @@ func cycle_dice() -> void:
 	## 创建新骰子实例
 	var dice: Node2D = DiceEntityScene.instantiate() # instantiate()：从预加载的场景创建实例
 	dice.position = Vector2(0, -80)           # 骰子显示在玩家头顶
+	add_child(dice)                           # 先 add_child，触发 _ready() 初始化 @onready 变量
 	if dice.has_method("setup"):              # has_method 泛型检查
 		dice.setup(new_data, self)            # 传递骰子数据和 owner（玩家自己）
-	add_child(dice)                           # 将骰子添加为玩家子节点
 	## has_signal("signal_name")：运行时检查是否有指定信号
 	if dice.has_signal("rolled"):
 		dice.rolled.connect(_on_dice_rolled)  # 连接骰子投掷信号
@@ -221,16 +221,93 @@ func cycle_dice() -> void:
 
 ## 游戏开始时生成初始骰子（在 _ready 中调用）
 func _spawn_starting_dice() -> void:
-	## 从 DiceManager 获取初始骰子数据（标准 D6 骰子）
-	var dice: Node2D = DiceEntityScene.instantiate() # instantiate()：实例化骰子场景
-	dice.position = Vector2(0, -80)           # 骰子显示在玩家头顶
-	var data: DiceData = DiceManager.get_standard_d6() # 获取标准 D6 骰子数据
-	if dice.has_method("setup"):              # 泛型方法检查
-		dice.setup(data, self)                # 初始化骰子（数据 + 拥有者）
-	add_child(dice)                           # 将骰子节点挂在玩家节点下
+	print("🎲 _spawn_starting_dice 开始")
+	var dice: Node2D = DiceEntityScene.instantiate()
+	dice.position = Vector2(0, -80)
+	add_child(dice)
+	var data: DiceData = DiceManager.get_standard_d6()
+	print("🎲 骰子数据：%s，面数：%d" % [data.dice_name, data.combat_faces.size()])
+	if dice.has_method("setup"):
+		dice.setup(data, self)
 	if dice.has_signal("rolled"):
-		dice.rolled.connect(_on_dice_rolled)  # 连接骰子投掷到玩家处理
-	dice_slots.append(dice)                   # 记录到槽位列表
+		dice.rolled.connect(_on_dice_rolled)
+	dice_slots.append(dice)
+	print("🎲 骰子生成完毕，dice_slots 数量：%d" % dice_slots.size())
+
+
+## 给玩家添加一颗新骰子（升级选择/拾取时调用）
+func add_dice(data: DiceData) -> void:
+	print("🎲 add_dice: %s（当前骰子数：%d）" % [data.dice_name, dice_slots.size()])
+	var dice: Node2D = DiceEntityScene.instantiate()
+	dice_slots.append(dice)
+	add_child(dice)
+	if dice.has_method("setup"):
+		dice.setup(data, self)
+	if dice.has_signal("rolled"):
+		dice.rolled.connect(_on_dice_rolled)
+	# 重新排布所有骰子位置（对称排列）
+	_rearrange_dice_positions()
+	print("🎲 骰子添加完毕，dice_slots 数量：%d" % dice_slots.size())
+
+
+## 将所有骰子排列在玩家头顶，支持多行换行
+## 布局规则（与升级 UI 一致）：
+##   - 1~4 个骰子：单行居中
+##   - 5 个以上：双行，上行 floor(N/2) 个，下行 N-floor(N/2) 个
+## 每行内部居中对齐，行间距 28px
+func _rearrange_dice_positions() -> void:
+	var count: int = dice_slots.size()
+	if count == 0:
+		return
+
+	# 决定行数和每行骰子数
+	# 规则：<=4 单行，>=5 双行
+	# 双行时上行 = floor(N/2)，下行 = N - 上行
+	var is_double_row: bool = count >= 5
+	var top_count: int = count / 2  # int 除法自动 floor：5→2, 6→3, 7→3, 8→4, 9→4
+
+	# 构建行列表：每个元素是该行的骰子索引列表
+	var rows: Array[Array] = []
+	if not is_double_row:
+		# 单行：所有骰子在同一行
+		var row: Array[int] = []
+		for i in range(count):
+			row.append(i)
+		rows.append(row)
+	else:
+		# 双行：上行 + 下行
+		var top_row: Array[int] = []
+		var bottom_row: Array[int] = []
+		for i in range(top_count):
+			top_row.append(i)
+		for i in range(top_count, count):
+			bottom_row.append(i)
+		rows.append(top_row)
+		rows.append(bottom_row)
+
+	# 行间距（垂直方向）
+	var row_spacing: float = 28.0
+	# 骰子水平间距
+	var spacing: float = 22.0
+	# 基准 Y 坐标（第一行骰子的 Y，向下递增）
+	# 双行时：第一行在 y=-80，第二行在 y=-80+row_spacing
+	# 单行时：所有骰子都在 y=-80
+	var base_y: float = -80.0
+
+	for row_idx in range(rows.size()):
+		var row: Array[int] = rows[row_idx]
+		var row_count: int = row.size()
+		# 该行起始 X（居中排列）
+		var start_x: float = -(row_count - 1) * spacing * 0.5
+		# 该行 Y 坐标（第一行在 base_y，后续行往下偏移）
+		var row_y: float = base_y + row_idx * row_spacing
+
+		for col_idx in range(row_count):
+			var dice_idx: int = row[col_idx]
+			var dice: Node2D = dice_slots[dice_idx]
+			if dice != null:
+				dice.position.x = start_x + col_idx * spacing
+				dice.position.y = row_y
 
 
 ## 更新 UI 标签（每帧调用）

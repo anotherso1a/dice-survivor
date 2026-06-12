@@ -85,15 +85,33 @@ func _refresh_dice_list() -> void:
 		_dice_grid.add_child(card)
 
 
-## 创建单个骰子卡片
+## 创建单个骰子卡片（含代码渲染的骰面缩略图）
 func _create_dice_card(dice_data: DiceData, index: int) -> Control:
 	var card := MarginContainer.new()
 	card.add_theme_constant_override("margin_top", 4)
 	card.add_theme_constant_override("margin_bottom", 4)
 
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 10)
+	card.add_child(hbox)
+
+	# --- 左侧：骰面缩略图（用 DiceFaceRenderer 渲染） ---
+	if not dice_data.combat_faces.is_empty():
+		var face_preview := TextureRect.new()
+		# 渲染第 0 面作为预览（传入骰子材质）
+		var preview_face: FaceData = dice_data.combat_faces[0]
+		var mat: DiceMaterial = dice_data.dice_material
+		face_preview.texture = DiceFaceRenderer.render(mat, preview_face)
+		face_preview.custom_minimum_size = Vector2(48, 48)
+		face_preview.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+		face_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		hbox.add_child(face_preview)
+
+	# --- 右侧：骰子信息 ---
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
-	card.add_child(vbox)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(vbox)
 
 	# --- 骰子头部：编号 + 名称 + 元素 ---
 	var header := HBoxContainer.new()
