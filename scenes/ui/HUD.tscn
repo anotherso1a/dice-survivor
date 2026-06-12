@@ -1,31 +1,108 @@
-[gd_scene format=3 uid="uid://b1hud01"]
+[gd_scene format=3 load_steps=2]
 
-[ext_resource type="Script" uid="uid://5wsarkmtqr7e" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
 
-[node name="HUD" type="CanvasLayer" unique_id=1960124275]
+[node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
 
-[node name="ScoreLabel" type="Label" parent="." unique_id=2019312083]
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 220.0
-offset_bottom = 44.0
-theme_override_font_sizes/font_size = 24
+[node name="TopPanel" type="Panel" parent="."]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 0.0
+anchor_right = 0.0
+offset_right = 1280.0
+offset_bottom = 48.0
+grow_horizontal = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="TopPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 4.0
+offset_right = -12.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="ScoreLabel" type="Label" parent="TopPanel/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
 text = "击杀: 0"
 
-[node name="Instructions" type="Label" parent="." unique_id=929916760]
-offset_left = 20.0
-offset_top = 50.0
-offset_right = 420.0
-offset_bottom = 66.0
-theme_override_font_sizes/font_size = 16
-text = "WASD 移动  |  1 暴击  |  Q 切换骰子"
+[node name="Sep1" type="VSeparator" parent="TopPanel/HBoxContainer"]
+layout_mode = 2
 
-[node name="Tip" type="Label" parent="." unique_id=875633262]
+[node name="HpContainer" type="HBoxContainer" parent="TopPanel/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HpBar" type="TextureProgressBar" parent="TopPanel/HBoxContainer/HpContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(160, 20)
+value = 100.0
+
+[node name="HpLabel" type="Label" parent="TopPanel/HBoxContainer/HpContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+text = "100 / 100"
+
+[node name="Sep2" type="VSeparator" parent="TopPanel/HBoxContainer"]
+layout_mode = 2
+
+[node name="CoinsLabel" type="Label" parent="TopPanel/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.95, 0.8, 0.2, 1)
+text = "💰 0"
+
+[node name="PanelSpacer" type="Control" parent="TopPanel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RelicBadge" type="Label" parent="TopPanel/HBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.9, 0.5, 0.9, 1)
+text = "📿 0"
+
+[node name="DiceContainer" type="MarginContainer" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = -40.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+
+[node name="DiceLabel" type="Label" parent="DiceContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+text = "🎲 ---"
+
+[node name="Instructions" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 0.0
+anchor_right = 0.0
 offset_left = 20.0
-offset_top = 80.0
-offset_right = 420.0
-offset_bottom = 94.0
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 14
-text = "循环: 标准 → 灌铅 → 玻璃 → 火"
+offset_top = 680.0
+offset_right = 600.0
+offset_bottom = 700.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.5, 0.5, 0.55, 1)
+text = "WASD 移动 | Q 切换骰子 | ESC 暂停 | R 遗物 | B 骰子背包"

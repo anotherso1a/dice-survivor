@@ -1,26 +1,35 @@
-[gd_scene format=3 uid="uid://cpomhf04fynbu"]
+[gd_scene format=3 load_steps=8]
 
-[ext_resource type="Script" uid="uid://c3iqucrjkqelq" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="PackedScene" uid="uid://dgtmib5sr1bvu" path="res://scenes/entities/Player.tscn" id="2_player"]
-[ext_resource type="PackedScene" uid="uid://b1enemy01" path="res://scenes/entities/Enemy.tscn" id="3_enemy"]
-[ext_resource type="PackedScene" uid="uid://b1hud01" path="res://scenes/ui/HUD.tscn" id="4_hud"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/entities/Player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/entities/Enemy.tscn" id="3_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="5_pause"]
+[ext_resource type="PackedScene" path="res://scenes/ui/relic_list_ui.tscn" id="6_relic"]
+[ext_resource type="PackedScene" path="res://scenes/ui/dice_status_ui.tscn" id="7_dice"]
 
-[node name="Main" type="Node2D" unique_id=2055720032]
+[node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 enemy_scene = ExtResource("3_enemy")
 
-[node name="BG" type="ColorRect" parent="." unique_id=1749814639]
+[node name="BG" type="ColorRect" parent="."]
 z_index = -10
 offset_right = 1280.0
 offset_bottom = 720.0
 color = Color(0.08, 0.08, 0.12, 1)
 
-[node name="Player" parent="." unique_id=1442496111 instance=ExtResource("2_player")]
+[node name="Player" parent="." instance=ExtResource("2_player")]
 position = Vector2(640, 360)
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=407354125]
+[node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(640, 360)
 
-[node name="Enemies" type="Node2D" parent="." unique_id=104934138]
+[node name="Enemies" type="Node2D" parent="."]
 
-[node name="HUD" parent="." unique_id=2119899872 instance=ExtResource("4_hud")]
+[node name="HUD" parent="." instance=ExtResource("4_hud")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
+
+[node name="RelicList" parent="." instance=ExtResource("6_relic")]
+
+[node name="DiceStatus" parent="." instance=ExtResource("7_dice")]

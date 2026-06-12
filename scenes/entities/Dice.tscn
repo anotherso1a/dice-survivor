@@ -5,14 +5,19 @@
 [node name="Dice" type="Node2D" unique_id=1797305216]
 script = ExtResource("1_dice")
 
-[node name="DiceRect" type="Polygon2D" parent="." unique_id=1407172825]
-color = Color(1, 0.8, 0.2, 1)
-polygon = PackedVector2Array(-20, -20, 20, -20, 20, 20, -20, 20)
+[node name="Visual" type="Node2D" parent="." unique_id=886213945]
+scale = Vector2(2, 2)
 
-[node name="DiceLabel" type="Label" parent="." unique_id=1608837005]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visual" unique_id=3517469281]
+centered = true
+
+[node name="SpinEffect" type="Node2D" parent="Visual" unique_id=1724390567]
+
+[node name="CooldownLabel" type="Label" parent="." unique_id=1608837005]
 offset_left = -15.0
-offset_top = -8.0
+offset_top = 24.0
 offset_right = 15.0
-offset_bottom = 22.0
-theme_override_font_sizes/font_size = 20
-text = "🎲"
+offset_bottom = 44.0
+theme_override_font_sizes/font_size = 14
+text = ""
+visible = false

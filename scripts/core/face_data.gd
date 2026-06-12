@@ -59,6 +59,12 @@ enum FaceType { NORMAL, ENHANCED, ELEMENTAL, CURSED }  # enum 关键字：定义
 ## 骰面描述（显示在 UI 或 tooltip），用多行文本编辑器编辑
 @export_multiline var description: String = ""  # @export_multiline 关键字：和 @export 类似，但在检查器中显示为多行文本输入框（而非单行），适合长文本
 
+## 面的索引（0~5），对应骰子 6 个面的位置
+## 用于动画切换：骰子掷出后，根据此值播放对应面的动画帧
+## 如果某个面在骰子上的出现次数 > 1（比如面 1 出现 2 次），
+## 可以创建多个 FaceData 实例（相同属性，不同 face_index）加入 combat_faces 数组
+@export var face_index: int = 0
+
 
 ## 运行时计算最终伤害（含暴击 + 倍率）
 ## multiplier_bonus 来自外部加成（如遗物、技能），会加到骰面自身的 multiplier 上

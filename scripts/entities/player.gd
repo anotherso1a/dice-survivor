@@ -184,9 +184,11 @@ func _on_damaged(_dmg: int, _is_crit: bool) -> void:
 ## 死亡回调（HealthComponent.died 信号触发）
 func _on_died() -> void:
 	print("💀 玩家阵亡！")
-	set_physics_process(false)                # 停止物理处理（不再移动/响应输入）
-	EventBus.player_died.emit()               # 发射全局死亡信号（通知 UI/GameManager）
-	get_tree().reload_current_scene()         # 重新加载当前场景（直接重置，后续改为弹死亡 UI）
+	set_physics_process(false)
+	EventBus.player_died.emit()
+	# 通过 GameManager 进入结算流程（短暂延迟后跳转主菜单）
+	await get_tree().create_timer(1.5).timeout
+	GameManager.transition_to(GameManager.Phase.GAME_OVER)
 
 
 ## 切换骰子（Q 键触发）

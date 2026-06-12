@@ -1,62 +1,169 @@
 ## HUD 界面脚本
 ##
-## 本脚本负责游戏中所有 UI 信息的显示，挂载在 HUD 节点上。
+## 本脚本负责游戏中所有常驻 UI 信息的显示，挂载在 HUD 节点上。
 ## 核心设计原则：HUD 不直接引用 Player 或 Enemy 节点，而是通过订阅
 ## EventBus 的信号来获取游戏数据，实现 UI 与游戏逻辑的完全解耦。
 ## 挂载节点：scenes/ui/HUD.tscn
-## 对应旧文件：scripts/HUD.gd
-## 迁移要点：
-##   - 击杀计数 → 订阅 EventBus.kill_count_changed
-##   - 后续 M2 加入 HP 条、骰子 CD 显示等
 ##
-## CanvasLayer 说明：
-##   CanvasLayer 是 Godot 中专门用于 UI 的节点基类，它会创建一个
-##   独立的渲染图层，确保 HUD 永远渲染在游戏世界的最上层，
-##   不受摄像机缩放、移动或旋转的影响，是 UI 节点的标准挂载方式。
+## 功能模块：
+##   - HP 条（彩色渐变：绿→黄→红）
+##   - 金币显示
+##   - 击杀计数
+##   - 骰子快捷信息（当前激活骰子名称 + 冷却）
+##   - 遗物计数徽章（点击 / 按 R 打开遗物列表）
+##   - 操作提示（可切换）
 ##
-extends CanvasLayer  # 继承 CanvasLayer，使 HUD 始终渲染在最上层，不受摄像机影响
+extends CanvasLayer
 
 
-# ========== 节点引用（@onready 在 _ready() 前自动赋值）==========
-# @onready：节点进入场景树时自动初始化，等价于在 _ready() 里手动 get_node()
-# $ScoreLabel：通过节点路径获取子节点，等价于 get_node("ScoreLabel")
-# : Label：类型注解，Godot 4 静态类型系统，提供代码补全和错误检查
-@onready var _score_label: Label = $ScoreLabel  # 绑定场景树中的 ScoreLabel 节点，用于显示击杀数
-@onready var _instructions: Label = $Instructions  # 绑定 Instructions 节点，显示操作提示文字
-@onready var _tip: Label = $Tip  # 绑定 Tip 节点，显示额外的提示信息
+# ========== 节点引用 ==========
+@onready var _score_label: Label = %ScoreLabel
+@onready var _hp_bar: TextureProgressBar = %HpBar
+@onready var _hp_label: Label = %HpLabel
+@onready var _coins_label: Label = %CoinsLabel
+@onready var _dice_label: Label = %DiceLabel
+@onready var _relic_badge: Label = %RelicBadge
+@onready var _instructions: Label = %Instructions
+@onready var _panel: Panel = %TopPanel
 
 
-## _ready() 是 Godot 的生命周期回调，节点首次进入场景树时自动调用一次
-## 这里的职责是订阅 EventBus 信号，建立 HUD 与游戏逻辑的通信桥梁
 func _ready() -> void:
-	# EventBus.kill_count_changed 是游戏全局事件总线上的信号
-	# HUD 通过 connect() 订阅此信号，当击杀数变化时 EventBus 会自动通知 HUD
-	# _on_kill_count_changed 是本脚本中的回调函数，信号触发时自动调用
-	EventBus.kill_count_changed.connect(_on_kill_count_changed)  # 订阅击杀数变化信号
-	# 订阅玩家 HP 变化信号，当玩家受伤或治疗时 HUD 收到通知，目前留空待 M2 实现血条
-	EventBus.player_hp_changed.connect(_on_player_hp_changed)  # 订阅玩家 HP 变化信号
-	print("✅ HUD ready")  # 控制台输出调试信息，确认 HUD 初始化完成
+	# 订阅 EventBus 信号
+	EventBus.kill_count_changed.connect(_on_kill_count_changed)
+	EventBus.player_hp_changed.connect(_on_player_hp_changed)
+	EventBus.coins_changed.connect(_on_coins_changed)
+	EventBus.relic_added.connect(_on_relics_changed)
+	EventBus.relic_removed.connect(_on_relics_changed)
+	EventBus.dice_added.connect(_on_dice_pool_changed)
+	EventBus.dice_removed.connect(_on_dice_pool_changed)
+
+	# 初始刷新
+	_refresh_hp_bar(RunState.player_hp, RunState.player_max_hp)
+	_refresh_coins(RunState.coins)
+	_refresh_relic_badge(RunState.relics.size())
+
+	print("✅ HUD ready")
 
 
-## 击杀计数更新回调
-## 当 EventBus 发出 kill_count_changed 信号时，此函数被自动调用
-## new_count: 最新的击杀总数，由 EventBus 在 emit 时传入
+# ========== 击杀计数 ==========
 func _on_kill_count_changed(new_count: int) -> void:
-	# 更新 ScoreLabel 的文本内容，"击杀: %d" 是格式化字符串，%d 会被 new_count 替换
-	_score_label.text = "击杀: %d" % new_count  # 将最新击杀数显示到 UI 标签上
+	_score_label.text = "击杀: %d" % new_count
 
 
-## 玩家 HP 更新回调（后续 M2 接入血条 UI）
-## _new_hp: 玩家当前生命值；_max_hp: 玩家最大生命值
-## 前缀 _ 表示参数在函数体内未被使用，仅用于匹配信号签名，避免编译器警告
-func _on_player_hp_changed(_new_hp: int, _max_hp: int) -> void:
-	pass  # 留待 M2 实现血条，目前暂不处理 HP 变化
+# ========== HP 条 ==========
+func _on_player_hp_changed(new_hp: int, max_hp: int) -> void:
+	_refresh_hp_bar(new_hp, max_hp)
 
 
-## 外部调用（兼容旧逻辑，后续移除）
-## 供其他节点直接调用以增加击杀计数，是旧架构的兼容接口
-## 新架构应通过 EventBus.kill_count_changed 信号驱动
+func _refresh_hp_bar(hp: int, max_hp: int) -> void:
+	var ratio: float = clamp(float(hp) / float(max_hp), 0.0, 1.0)
+	_hp_bar.value = ratio * 100.0
+
+	# 颜色渐变：绿 (>60%) → 黄 (30-60%) → 红 (<30%)
+	var color: Color
+	if ratio > 0.6:
+		color = Color(0.2, 0.8, 0.3, 1)      # 绿
+	elif ratio > 0.3:
+		color = Color(0.9, 0.75, 0.2, 1)       # 黄
+	else:
+		color = Color(0.9, 0.2, 0.2, 1)        # 红
+
+	_hp_bar.tint_progress = color
+	_hp_label.text = "%d / %d" % [hp, max_hp]
+
+
+# ========== 金币 ==========
+func _on_coins_changed(new_amount: int) -> void:
+	_refresh_coins(new_amount)
+
+
+func _refresh_coins(amount: int) -> void:
+	_coins_label.text = "💰 %d" % amount
+
+
+# ========== 遗物徽章 ==========
+func _on_relics_changed(_relic: RelicData) -> void:
+	_refresh_relic_badge(RunState.relics.size())
+
+
+func _refresh_relic_badge(count: int) -> void:
+	if count > 0:
+		_relic_badge.text = "📿 %d" % count
+		_relic_badge.visible = true
+	else:
+		_relic_badge.visible = false
+
+
+# ========== 骰子快捷信息 ==========
+func _on_dice_pool_changed(_dice: DiceData) -> void:
+	pass  # 骰子信息每帧更新见 _process
+
+
+func _process(_delta: float) -> void:
+	_update_dice_quick_info()
+
+
+## 更新骰子快捷信息（显示当前激活骰子 + 冷却）
+func _update_dice_quick_info() -> void:
+	var player_nodes := get_tree().get_nodes_in_group("player")
+	if player_nodes.is_empty():
+		return
+
+	var player: Node2D = player_nodes[0] as Node2D
+	if player == null:
+		return
+
+	# 尝试获取骰子槽位信息
+	if not player.has_method("get") and not "dice_slots" in player:
+		return
+
+	var dice_slots: Array = player.get("dice_slots") if "dice_slots" in player else []
+	var active_idx: int = player.get("active_dice_index") if "active_dice_index" in player else 0
+
+	if dice_slots.is_empty() or active_idx >= dice_slots.size():
+		_dice_label.text = "🎲 无骰子"
+		return
+
+	var dice_node: Node2D = dice_slots[active_idx] as Node2D
+	if dice_node == null or not is_instance_valid(dice_node):
+		_dice_label.text = "🎲 ---"
+		return
+
+	var dice_data: DiceData = dice_node.get("dice_data") if "dice_data" in dice_node else null
+	if dice_data == null:
+		_dice_label.text = "🎲 ---"
+		return
+
+	var cd: float = 0.0
+	if dice_node.has_method("get_cooldown_remaining"):
+		cd = dice_node.get_cooldown_remaining()
+
+	var elem_icon: String = _get_element_icon(dice_data.element)
+	var broken_str: String = " 💔" if dice_data.is_broken() else ""
+	var cd_str: String = "就绪" if cd <= 0 else "%.1fs" % cd
+
+	_dice_label.text = "🎲 %s%s  冷却:%s%s | [%d/%d]" % [
+		dice_data.dice_name,
+		elem_icon,
+		cd_str,
+		broken_str,
+		active_idx + 1,
+		dice_slots.size()
+	]
+
+
+func _get_element_icon(element: StringName) -> String:
+	match element:
+		&"fire":     return "🔥"
+		&"ice":      return "❄️"
+		&"thunder":  return "⚡"
+		&"poison":   return "☠️"
+		&"holy":     return "✨"
+		&"dark":     return "🌑"
+		_:           return ""
+
+
+## ========== 外部兼容接口（保留，逐步迁移至 EventBus）==========
+
 func add_kill() -> void:
-	# RunState 是全局单例（Autoload），存储当前游戏运行状态（击杀数、时长等）
-	# kill_count += 1 等价于 kill_count = kill_count + 1
-	RunState.kill_count += 1  # 全局击杀计数 +1
+	RunState.kill_count += 1
