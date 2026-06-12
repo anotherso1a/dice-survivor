@@ -1,0 +1,30 @@
+# Godot 4+ 缓存与导入目录
+.godot/
+
+# Godot 3 遗留
+.import/
+export_presets.cfg
+
+# 二进制 Import 缓存（.import 文件保留，.png.import 等由 Git 管理）
+# 如需忽略所有 .import 文件，取消下行注释
+# *.import
+
+# Mono/Thatch 构建产物
+.mono/
+data_*/
+mono_crash.*.json
+
+# 翻译
+*.translation
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# 日志
+*.log
