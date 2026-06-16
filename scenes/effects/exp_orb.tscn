@@ -1,0 +1,89 @@
+[gd_scene load_steps=10 format=3 uid="uid://exp_orb_effect"]
+
+[ext_resource type="Shader" path="res://shaders/exp_orb_glow.gdshader" id="1_glow_shader"]
+[ext_resource type="Script" path="res://scripts/effects/exp_orb.gd" id="2_orb_script"]
+
+; ---- Glow Sprite Material（白色光球头部） ----
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glow"]
+shader = ExtResource("1_glow_shader")
+shader_parameter/glow_color = Color(1, 1, 1, 1)
+shader_parameter/glow_radius = 1.0
+shader_parameter/pulse_speed = 5.0
+
+; ---- 白色圆形纹理（径向渐变，给 shader 做 alpha 底板） ----
+[sub_resource type="Gradient" id="Gradient_white_circle"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1)
+offsets = PackedFloat32Array(0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_circle"]
+gradient = SubResource("Gradient_white_circle")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0.0)
+width = 32
+height = 32
+
+; ---- 流星尾焰颜色渐变：白 → 蓝 → 浅蓝 → 微白透明 ----
+; 0%: 炽热白光（紧贴光球头部）
+; 25%: 深蓝核心（尾焰最饱满段）
+; 55%: 浅蓝过渡（开始消散）
+; 85%: 微白薄雾（几乎消散）
+; 100%: 完全透明
+[sub_resource type="Gradient" id="Gradient_tail"]
+colors = PackedColorArray(
+	1,     1,     1,     1.0,   ; 0%   — 纯白不透明
+	0.08,  0.48,  1.0,   0.85,  ; 25%  — 深蓝高饱和
+	0.30,  0.65,  1.0,   0.45,  ; 55%  — 浅蓝半透明
+	0.60,  0.80,  1.0,   0.12,  ; 85%  — 微白薄雾
+	0.80,  0.90,  1.0,   0.0    ; 100% — 完全消失
+)
+offsets = PackedFloat32Array(0, 0.25, 0.55, 0.85, 1)
+
+; ---- 流星尾焰宽度衰减曲线 ----
+; 头宽 100% → 25%处保留 60% → 55%处 25% → 尖端 0%
+; 前段保持较宽让蓝焰核心厚重，后段加速收束
+[sub_resource type="Curve" id="Curve_tail_width"]
+_data = [
+	Vector2(0, 1),
+	0.0, 0.0, 0, 0,
+	Vector2(0.25, 0.6),
+	0.0, 0.0, 0, 0,
+	Vector2(0.55, 0.25),
+	0.0, 0.0, 0, 0,
+	Vector2(1, 0),
+	0.0, 0.0, 0, 0
+]
+point_count = 4
+
+; ---- ExpOrb Root ----
+[node name="ExpOrb" type="Node2D"]
+script = ExtResource("2_orb_script")
+arc_height = 80.0
+travel_duration = 0.55
+tail_length_max = 150.0
+tail_length_ratio_at_end = 0.15
+tail_head_width = 12.0
+glow_color = Color(1, 1, 1, 1)
+glow_radius = 1.0
+pulse_speed = 5.0
+
+; ---- 流星尾焰 Line2D（z_index = -1 在光球后方） ----
+[node name="TailLine" type="Line2D" parent="."]
+z_index = -1
+width = 12.0
+default_color = Color(1, 1, 1, 1)
+gradient = SubResource("Gradient_tail")
+width_curve = SubResource("Curve_tail_width")
+begin_cap_mode = 0
+end_cap_mode = 0
+joint_mode = 0
+antialiased = true
+points = PackedVector2Array(0, 0, -150, 0)
+visible = false
+
+; ---- Glow Sprite（流星头部白球，scale 1.0 = 32×32 像素） ----
+[node name="GlowSprite" type="Sprite2D" parent="."]
+texture = SubResource("GradientTexture2D_circle")
+material = SubResource("ShaderMaterial_glow")
+centered = true
+scale = Vector2(1.0, 1.0)

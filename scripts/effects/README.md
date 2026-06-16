@@ -13,6 +13,8 @@
 | `damage_number.gd` | DamageNumber | 飘字（伤害数值 + 暴击/元素标记） |
 | `spawn_warning.gd` | SpawnWarning | 出生点黄色闪烁警告 |
 | `element_vfx.gd` | ElementVFX | 元素特效（火焰/冰霜/雷电） |
+| `exp_orb.gd` | ExpOrb | 经验光芒（敌人死亡 → 抛物线飞向玩家，带拖尾 + 发光 shader） |
+| `exp_orb_spawner.gd` | ExpOrbSpawner | 经验光芒生成器（监听 enemy_died 自动批量生成） |
 
 ## 与 EventBus 的关系
 

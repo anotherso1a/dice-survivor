@@ -6,7 +6,7 @@
 ## 管理游戏阶段切换：菜单 → 战斗 → 波次清空 → 升级 → 休息站 → BOSS → 结算
 ## 当前 MVP 阶段：MENU 和 BATTLE 阶段完整可用，其余留骨架。
 ##
-## 击杀升级触发：每击杀 3 只怪物，暂停游戏并弹出骰子三选一升级界面
+## 击杀升级触发：每击杀 30 只怪物，暂停游戏并弹出骰子三选一升级界面
 ##
 extends Node
 
@@ -22,7 +22,7 @@ enum Phase {
 }
 
 ## 击杀升级触发间隔（每 N 杀触发一次升级选择）
-const KILL_UPGRADE_INTERVAL: int = 3
+const KILL_UPGRADE_INTERVAL: int = 30
 
 
 @export_group("Debug")
@@ -34,7 +34,7 @@ var _last_upgrade_kill_count: int = 0
 
 
 func _ready() -> void:
-	# 监听击杀数变化，每 3 杀触发升级
+	# 监听击杀数变化，每 30 杀触发升级
 	EventBus.kill_count_changed.connect(_on_kill_count_changed)
 	# 监听敌人死亡，递增击杀计数
 	EventBus.enemy_died.connect(_on_enemy_died)

@@ -1,4 +1,4 @@
-[gd_scene format=3 load_steps=8]
+[gd_scene format=3 load_steps=10]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/entities/Player.tscn" id="2_player"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="5_pause"]
 [ext_resource type="PackedScene" path="res://scenes/ui/relic_list_ui.tscn" id="6_relic"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dice_status_ui.tscn" id="7_dice"]
+[ext_resource type="Script" path="res://scripts/effects/exp_orb_spawner.gd" id="8_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/effects/exp_orb.tscn" id="9_exp_orb"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -33,3 +35,7 @@ position = Vector2(640, 360)
 [node name="RelicList" parent="." instance=ExtResource("6_relic")]
 
 [node name="DiceStatus" parent="." instance=ExtResource("7_dice")]
+
+[node name="ExpOrbSpawner" type="Node2D" parent="."]
+script = ExtResource("8_spawner")
+orb_scene = ExtResource("9_exp_orb")
