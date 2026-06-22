@@ -28,3 +28,9 @@ mono_crash.*.json
 
 # 日志
 *.log
+
+# Godot 4 自动生成的 .uid 文件（不应提交）
+*.uid
+
+# 临时工作文件
+.workbuddy/memory/2026-*.md

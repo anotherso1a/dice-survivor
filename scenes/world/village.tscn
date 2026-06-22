@@ -1,0 +1,167 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/village_scene.gd" id="1_village"]
+[ext_resource type="Script" path="res://scripts/world/village_player.gd" id="2_vplayer"]
+[ext_resource type="Script" path="res://scripts/world/village_npc.gd" id="3_vnpc"]
+[ext_resource type="Shader" path="res://shaders/village_floor.gdshader" id="4_floor"]
+[ext_resource type="Shader" path="res://shaders/lamp_glow.gdshader" id="5_lamp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player_idle.png" id="6_pplayer"]
+[ext_resource type="Texture2D" path="res://assets/sprites/npc_idle.png" id="7_pnpc"]
+[ext_resource type="Texture2D" path="res://assets/sprites/lamp.png" id="8_plamp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/exit_arrow.png" id="9_arrow"]
+
+[sub_resource type="ShaderMaterial" id="FloorMat"]
+shader = ExtResource("4_floor")
+shader_parameter/tile_size = 20.0
+
+[sub_resource type="ShaderMaterial" id="LampMat"]
+shader = ExtResource("5_lamp")
+shader_parameter/glow_radius = 2.5
+shader_parameter/pulse_speed = 2.0
+
+[sub_resource type="CircleShape2D" id="NpcShape"]
+radius = 30.0
+
+[sub_resource type="RectangleShape2D" id="InteractShape"]
+size = Vector2(120, 60)
+
+[sub_resource type="CapsuleShape2D" id="PlayerShape"]
+radius = 8.0
+height = 14.0
+
+[sub_resource type="RectangleShape2D" id="ExitShape"]
+size = Vector2(60, 200)
+
+[node name="VillageScene" type="Node2D"]
+script = ExtResource("1_village")
+
+[node name="Floor" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(1, 1, 1, 1)
+material = SubResource("FloorMat")
+mouse_filter = 2
+
+[node name="SkyBackground" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+offset_bottom = 320.0
+color = Color(0.06, 0.08, 0.2, 1.0)
+mouse_filter = 2
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="LeftWall" type="ColorRect" parent="Buildings"]
+offset_left = -10.0
+offset_top = 120.0
+offset_right = 100.0
+offset_bottom = 720.0
+color = Color(0.15, 0.10, 0.08, 0.9)
+mouse_filter = 2
+
+[node name="RightWall" type="ColorRect" parent="Buildings"]
+anchor_right = 1.0
+offset_left = 1180.0
+offset_top = 120.0
+offset_right = 1290.0
+offset_bottom = 720.0
+color = Color(0.15, 0.10, 0.08, 0.9)
+mouse_filter = 2
+
+[node name="LeftRoof" type="ColorRect" parent="Buildings"]
+offset_left = -10.0
+offset_top = 80.0
+offset_right = 110.0
+offset_bottom = 120.0
+color = Color(0.08, 0.06, 0.04, 1.0)
+mouse_filter = 2
+
+[node name="RightRoof" type="ColorRect" parent="Buildings"]
+anchor_right = 1.0
+offset_left = 1170.0
+offset_top = 80.0
+offset_right = 1290.0
+offset_bottom = 120.0
+color = Color(0.08, 0.06, 0.04, 1.0)
+mouse_filter = 2
+
+[node name="LampLeft" type="Sprite2D" parent="Buildings"]
+position = Vector2(95, 200)
+scale = Vector2(3, 3)
+texture = ExtResource("8_plamp")
+material = SubResource("LampMat")
+
+[node name="LampRight" type="Sprite2D" parent="Buildings"]
+position = Vector2(1185, 200)
+scale = Vector2(3, 3)
+texture = ExtResource("8_plamp")
+material = SubResource("LampMat")
+
+[node name="NPCs" type="Node2D" parent="."]
+
+[node name="GamblerNPC" type="Node2D" parent="NPCs"]
+script = ExtResource("3_vnpc")
+position = Vector2(640, 500)
+npc_type = 0
+npc_display_name = "赌徒老汉"
+
+[node name="Sprite2D" type="Sprite2D" parent="NPCs/GamblerNPC"]
+scale = Vector2(2, 2)
+texture = ExtResource("7_pnpc")
+
+[node name="NameLabel" type="Label" parent="NPCs/GamblerNPC"]
+position = Vector2(-30, -60)
+text = "赌徒老汉"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.85, 0.8, 0.55, 1.0)
+theme_override_font_sizes/font_size = 14
+
+[node name="InteractHint" type="Label" parent="NPCs/GamblerNPC"]
+position = Vector2(-40, -42)
+text = ""
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.5, 0.9, 0.5, 1.0)
+theme_override_font_sizes/font_size = 12
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="NPCs/GamblerNPC"]
+shape = SubResource("NpcShape")
+
+[node name="InteractArea" type="Area2D" parent="NPCs/GamblerNPC"]
+monitoring = true
+collision_mask = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="NPCs/GamblerNPC/InteractArea"]
+shape = SubResource("InteractShape")
+
+[node name="VillagePlayer" type="CharacterBody2D" parent="."]
+script = ExtResource("2_vplayer")
+position = Vector2(200, 500)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Sprite2D" type="Sprite2D" parent="VillagePlayer"]
+scale = Vector2(2, 2)
+texture = ExtResource("6_pplayer")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VillagePlayer"]
+shape = SubResource("PlayerShape")
+
+[node name="InteractHint" type="Label" parent="VillagePlayer"]
+position = Vector2(-60, -60)
+text = ""
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.8, 0.75, 0.5, 1.0)
+theme_override_font_sizes/font_size = 14
+
+[node name="MinigameLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="ExitZone" type="Area2D" parent="."]
+position = Vector2(1240, 400)
+
+[node name="Sprite2D" type="Sprite2D" parent="ExitZone"]
+texture = ExtResource("9_arrow")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ExitZone"]
+shape = SubResource("ExitShape")

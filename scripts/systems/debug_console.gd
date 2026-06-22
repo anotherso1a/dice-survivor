@@ -249,6 +249,7 @@ func _register_commands() -> void:
 	_add_cmd("list", _cmd_list, "列出场景中的实体：玩家、敌人、骰子数量")
 	_add_cmd("wave", _cmd_wave, "发射波次开始信号。用法: wave <波次序号>")
 	_add_cmd("give_relic", _cmd_give_relic, "添加遗物（预留）。用法: give_relic <遗物id>")
+	_add_cmd("scene", _cmd_scene, "切换场景。用法: scene <main|village|dice_cup|menu>")
 
 
 func _add_cmd(name: String, callable: Callable, desc: String) -> void:
@@ -320,24 +321,43 @@ func _cmd_kill_all(_args: String) -> void:
 
 
 func _cmd_dice(args: String) -> void:
-	var dice_type: String = args.strip_edges().to_lower()
-	var data: DiceData = null
+	## 所有可用骰子列表（新增骰子时在这里加一行）
+	const DICE_OPTIONS: Array[Dictionary] = [
+		{ "id": "standard", "name": "标准骰子 d6", "factory": "get_standard_d6" },
+		{ "id": "fire",      "name": "火焰骰子 d6", "factory": "get_fire_d6" },
+		{ "id": "frost",     "name": "冰霜骰子 d6", "factory": "get_frost_d6" },
+		{ "id": "glass",     "name": "玻璃骰子 d6", "factory": "get_glass_d6" },
+		{ "id": "lead",      "name": "灌铅骰子 d6", "factory": "get_leaded_d6" },
+		{ "id": "mountain",  "name": "山岳骰子 d6", "factory": "get_mountain_d6" },
+	]
 
-	match dice_type:
-		"standard", "标准", "":
-			data = DiceManager.get_standard_d6()
-		"fire", "火焰":
-			data = DiceManager.get_fire_d6()
-		"frost", "冰霜":
-			data = DiceManager.get_frost_d6()
-		"glass", "玻璃":
-			data = DiceManager.get_glass_d6()
-		"lead", "灌铅":
-			data = DiceManager.get_leaded_d6()
-		_:
-			_console_log("[color=#ff6666]未知骰子类型: %s。可选: standard, fire, frost, glass, lead[/color]" % dice_type)
+	## 无参数：显示列表
+	if args.strip_edges().is_empty():
+		_console_log("[b]可用骰子列表（输入 dice <序号|名字>）[/b]")
+		for i in range(DICE_OPTIONS.size()):
+			var opt: Dictionary = DICE_OPTIONS[i]
+			_console_log("  [color=#88ccff]%d[/color]  %s  (dice %s)" % [i + 1, opt["name"], opt["id"]])
+		return
+
+	## 按序号选择：dice 1 → standard
+	var num: int = args.to_int()
+	if num > 0 and num <= DICE_OPTIONS.size():
+		var opt: Dictionary = DICE_OPTIONS[num - 1]
+		_add_dice_by_factory(opt["factory"], opt["name"])
+		return
+
+	## 按名字选择：dice fire → 火焰骰子
+	var name_lower: String = args.strip_edges().to_lower()
+	for opt in DICE_OPTIONS:
+		if opt["id"].begins_with(name_lower):
+			_add_dice_by_factory(opt["factory"], opt["name"])
 			return
 
+	_console_log("[color=#ff6666]未知骰子: %s。输入 dice（无参数）查看列表。[/color]" % args)
+
+
+## 根据工厂方法名调用 DiceManager 静态方法，给玩家添加骰子
+func _add_dice_by_factory(factory: String, display_name: String) -> void:
 	var players: Array[Node] = get_tree().get_nodes_in_group("player")
 	if players.size() == 0:
 		_console_log("[color=#ff6666]找不到玩家节点[/color]")
@@ -348,8 +368,14 @@ func _cmd_dice(args: String) -> void:
 		_console_log("[color=#ff6666]玩家节点没有 add_dice 方法[/color]")
 		return
 
+	## 通过 StringName 调用静态方法（GDScript 支持这种方式）
+	var data: DiceData = DiceManager.call(factory)
+	if data == null:
+		_console_log("[color=#ff6666]创建骰子数据失败: %s[/color]" % factory)
+		return
+
 	player.add_dice(data)
-	_console_log("已添加骰子: [color=#88ccff]%s[/color]" % data.dice_name)
+	_console_log("已添加骰子: [color=#88ccff]%s[/color]" % display_name)
 
 
 func _cmd_coins(args: String) -> void:
@@ -451,3 +477,30 @@ func _cmd_wave(args: String) -> void:
 func _cmd_give_relic(args: String) -> void:
 	# TODO M4：遗物系统完善后实现
 	_console_log("[color=#ffaa00]遗物系统暂未实现，预留接口。参数: %s[/color]" % args)
+
+
+func _cmd_scene(args: String) -> void:
+	var scene_name: String = args.strip_edges().to_lower()
+	var scene_path: String = ""
+
+	match scene_name:
+		"main", "survivor", "幸存者", "":
+			scene_path = "res://scenes/Main.tscn"
+		"village", "村庄":
+			scene_path = "res://scenes/world/village.tscn"
+		"dice_cup", "骰盅", "赌斗":
+			scene_path = "res://scenes/minigames/dice_cup_duel.tscn"
+		"menu", "主菜单":
+			scene_path = "res://scenes/ui/main_menu.tscn"
+		_:
+			_console_log("[color=#ff6666]未知场景: %s。可选: main, village, dice_cup, menu[/color]" % scene_name)
+			return
+
+	# 解锁暂停
+	if get_tree().paused:
+		get_tree().paused = false
+
+	_console_log("切换场景 → [color=#88ccff]%s[/color]" % scene_path)
+	var err: Error = get_tree().change_scene_to_file(scene_path)
+	if err != OK:
+		_console_log("[color=#ff6666]切换失败: error=%d[/color]" % err)

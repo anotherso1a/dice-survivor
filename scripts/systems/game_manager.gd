@@ -16,7 +16,8 @@ enum Phase {
 	BATTLE,         ## 战斗中
 	WAVE_CLEAR,     ## 波次清空 → 弹三选一
 	LEVEL_UP,       ## 三选一升级中
-	REST_STATION,   ## 休息站
+	REST_STATION,   ## 休息站（旧版，保留兼容）
+	VILLAGE,        ## 村庄/城镇（2D 侧方视角街道，大关卡间修整）
 	BOSS,           ## BOSS 战
 	GAME_OVER,      ## 死亡 / 通关
 }
@@ -78,6 +79,8 @@ func transition_to(new_phase: Phase) -> void:
 			_show_level_up()
 		Phase.REST_STATION:
 			_enter_rest_station()
+		Phase.VILLAGE:
+			_enter_village()
 		Phase.BOSS:
 			_spawn_boss()
 		Phase.GAME_OVER:
@@ -131,10 +134,29 @@ func _on_dice_upgrade_selected(_dice_data: DiceData) -> void:
 	transition_to(Phase.BATTLE)
 
 
-## 进入休息站
+## 进入休息站（旧版，保留兼容）
 func _enter_rest_station() -> void:
 	## TODO M4：加载休息站场景
 	pass
+
+
+## 进入村庄（N 波战斗后触发）
+##
+## 使用方式：
+##   GameManager.transition_to(GameManager.Phase.VILLAGE)
+##
+## village_scene_path 可在调用前通过 set_village_scene 修改，
+## 不同大关卡对应不同村庄场景（村庄、城镇、城市、城堡等）。
+var village_scene_path: String = "res://scenes/world/village.tscn"
+
+func set_village_scene(path: String) -> void:
+	village_scene_path = path
+
+func _enter_village() -> void:
+	print("🏘️ 进入村庄：%s" % village_scene_path)
+	var err: Error = get_tree().change_scene_to_file(village_scene_path)
+	if err != OK:
+		push_error("GameManager: 无法加载村庄场景 %s" % village_scene_path)
 
 
 ## 生成 BOSS

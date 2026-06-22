@@ -21,6 +21,7 @@ enum PipStyle {
 	GLASS,    ## 菱形水晶（玻璃骰子）
 	LEAD,     ## 实心圆点（灌铅骰子，更沉重感）
 	CURSED,   ## 骷髅/十字（诅咒骰子）
+	MOUNTAIN, ## 三角岩块（山岳骰子 — 范围攻击）
 }
 
 
@@ -105,3 +106,8 @@ func _init(
 			crit_pip_color = Color(1.0, 0.30, 0.30)
 			highlight_color = Color(0.30, 0.15, 0.15)
 			border_color = Color(0.60, 0.20, 0.20)
+		PipStyle.MOUNTAIN:
+			pip_color = Color(0.55, 0.45, 0.30)
+			crit_pip_color = Color(1.0, 0.70, 0.15)
+			highlight_color = Color(0.45, 0.35, 0.25)
+			border_color = Color(0.35, 0.25, 0.15)

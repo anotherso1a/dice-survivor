@@ -174,6 +174,8 @@ static func _draw_pips(img: Image, mat: DiceMaterial, face_data: FaceData) -> vo
 			_draw_filled_pips(img, value, pip_color)
 		DiceMaterial.PipStyle.CURSED:
 			_draw_cross_pips(img, value, pip_color)
+		DiceMaterial.PipStyle.MOUNTAIN:
+			_draw_mountain_pips(img, value, pip_color)
 		_:
 			_draw_classic_pips(img, value, pip_color)
 
@@ -373,6 +375,40 @@ static func _draw_cross(img: Image, center: Vector2, size: int, color: Color) ->
 		var py: int = cy + int(corner.y)
 		if _in_bounds(px, py):
 			img.set_pixel(px, py, color)
+
+
+## 三角岩块点数（山岳骰子 — 范围攻击）
+static func _draw_mountain_pips(img: Image, value: int, pip_color: Color) -> void:
+	var positions := _get_pip_positions(value)
+	for pos in positions:
+		_draw_mountain_triangle(img, pos, 7, pip_color)
+
+
+## 绘制单个三角岩块（山岳骰子 pip 图案）
+static func _draw_mountain_triangle(img: Image, center: Vector2, size: int, color: Color) -> void:
+	var cx: int = int(center.x)
+	var cy: int = int(center.y)
+	# 三角形：尖顶在上，底部在下（山的形状）
+	for y in range(cy - size, cy + size + 1):
+		var half_width: int = int(float(size) * (1.0 - float(y - (cy - size)) / float(size * 2)))
+		for x in range(cx - half_width, cx + half_width + 1):
+			if _in_bounds(x, y):
+				var c := color
+				var y_norm: float = float(y - cy + size) / float(size * 2)
+				if y_norm > 0.7:
+					c.a = 1.0 - (y_norm - 0.7) * 0.5
+				img.set_pixel(x, y, c)
+	# 顶部高光（金色小三角）
+	var hi_color := Color(1.0, 0.95, 0.7, 0.8)
+	for y in range(cy - size, cy - size + 3):
+		for x in range(cx - 1, cx + 2):
+			if _in_bounds(x, y) and abs(x - cx) <= (y - (cy - size)):
+				img.set_pixel(x, y, hi_color)
+	# 底部深色边线
+	var dark_color := color.darkened(0.4)
+	for x in range(cx - size, cx + size + 1):
+		if _in_bounds(x, cy + size):
+			img.set_pixel(x, cy + size, dark_color)
 
 
 # ========== 辅助：获取骰点位置 ==========

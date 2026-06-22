@@ -75,4 +75,6 @@ func init_dice_pool() -> void:
 	dice_pool.append(DiceManager.get_leaded_d6())  # 添加灌铅骰子
 	dice_pool.append(DiceManager.get_glass_d6())  # 添加玻璃骰子
 	dice_pool.append(DiceManager.get_fire_d6())  # 添加火焰骰子
+	dice_pool.append(DiceManager.get_frost_d6())  # 添加冰霜骰子
+	dice_pool.append(DiceManager.get_mountain_d6())  # 添加山岳骰子（范围攻击）
 	print("✅ RunState：骰子池初始化完成，共 %d 个" % dice_pool.size())  # 控制台输出日志，显示骰子池大小

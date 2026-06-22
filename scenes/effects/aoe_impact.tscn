@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ivh8c"]
+radius = 60.0
+
+[sub_resource type="Gradient" id="Gradient_lhp0r"]
+offsets = PackedFloat32Array(0.0, 0.5, 1.0)
+colors = PackedColorArray(Color(1.5, 1.0, 0.3, 0.8), Color(1.0, 0.6, 0.1, 0.4), Color(1.0, 0.3, 0.0, 0.0))
+
+[node name="AoeImpact" type="Node2D"]
+
+[node name="ImpactSprite" type="Sprite2D" parent="."]
+texture = null
+scale = Vector2(0.1, 0.1)
+modulate = Color(1.5, 1.0, 0.3, 0.9)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+[root_main_path = NodePath("..")]
+libraries = {
+"": SubResource("AnimationLibrary_qt5x7")  # Placeholder, will be replaced by actual animation
+}
+
+[node name="AoeArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2  # 只检测敌人层
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AoeArea"]
+shape = SubResource("CircleShape2D_ivh8c")

@@ -1,4 +1,4 @@
-[gd_scene format=3 load_steps=10]
+[gd_scene format=3 load_steps=11]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/entities/Player.tscn" id="2_player"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/dice_status_ui.tscn" id="7_dice"]
 [ext_resource type="Script" path="res://scripts/effects/exp_orb_spawner.gd" id="8_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/effects/exp_orb.tscn" id="9_exp_orb"]
+[ext_resource type="Script" path="res://scripts/vfx/dice_projectile_fx.gd" id="10_dice_fx"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -39,3 +40,6 @@ position = Vector2(640, 360)
 [node name="ExpOrbSpawner" type="Node2D" parent="."]
 script = ExtResource("8_spawner")
 orb_scene = ExtResource("9_exp_orb")
+
+[node name="DiceProjectileFX" type="Node2D" parent="."]
+script = ExtResource("10_dice_fx")

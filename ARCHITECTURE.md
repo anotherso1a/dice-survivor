@@ -2,6 +2,10 @@
 
 > 版本 v1.0 · 2026-06-12 · 基于 GAME_DESIGN.md 全量系统推导
 
+**相关文档**：
+- 🎲 [骰子开发指南](docs/dice_development_guide.md) — **新增骰子时必须阅读**
+- 📋 [游戏设计文档](GAME_DESIGN.md) — 完整的游戏设计愿景
+
 ---
 
 ## 一、设计原则
@@ -580,3 +584,151 @@ func transition_to(new_phase: Phase) -> void:
 1. MinigameBase 基类
 2. RestStation 场景
 3. 第一个小游戏：百家乐
+
+
+---
+
+## 十一、攻击效果系统架构
+
+> 📖 **完整开发指南**：[docs/dice_development_guide.md](docs/dice_development_guide.md)  
+> ⚠️ **Agent 必读**：新增骰子或修改攻击逻辑前，必须先读取此文档！
+
+### 11.1 设计目标
+
+- **数据驱动**：攻击效果用 `AttackEffect` Resource 配置，策划在编辑器直接编辑
+- **类型安全**：5种攻击类型（投射物/近战/法术/持续/召唤）各有专用属性和遗物修饰
+- **可扩展**：新增攻击类型只需创建新的 Effect 子类和 Executor 子类
+- **元素反应**：独立于攻击类型的元素系统，支持正向反应（冰+火=爆炸等）
+
+### 11.2 核心类结构
+
+```
+scripts/core/
+├── attack_effect.gd           # AttackEffect 基类（class_name AttackEffect）
+├── projectile_effect.gd        # 投射物效果（子弹/火球/冰锥）
+├── melee_effect.gd            # 近战效果（挥砍/戳刺/旋转）
+├── spell_effect.gd            # 法术效果（闪电/陨石/地刺）
+├── duration_effect.gd          # 持续效果（火焰路径/毒云/光环）
+└── summon_effect.gd           # 召唤效果（骷髅/精灵/炮台）
+
+scripts/systems/
+├── attack_executor.gd         # AttackExecutor 基类（工厂方法创建执行器）
+├── projectile_executor.gd      # 投射物执行器
+├── melee_executor.gd          # 近战执行器（待实现）
+├── spell_executor.gd         # 法术执行器（待实现）
+├── duration_executor.gd       # 持续效果执行器（待实现）
+└── summon_executor.gd        # 召唤执行器（待实现）
+```
+
+### 11.3 AttackEffect 基类
+
+```gdscript
+# scripts/core/attack_effect.gd
+class_name AttackEffect
+extends Resource
+
+enum EffectType { PROJECTILE, MELEE, SPELL, DURATION, SUMMON }
+enum ElementType { NONE, FIRE, FROST, LIGHTNING, POISON, HOLY, DARK }
+
+@export var effect_name: String = ""
+@export var effect_type: EffectType = EffectType.PROJECTILE
+@export var element: ElementType = ElementType.NONE
+@export var base_damage: int = 10
+@export var damage_multiplier: float = 1.0
+@export var cooldown: float = 1.0
+
+## 遗物修饰接口（子类重写）
+func apply_relic_modifiers(relics: Array[RelicData]) -> void:
+    # 1. 通用修饰（所有类型）
+    # 2. 类型特定修饰（由子类实现）
+    _apply_type_specific_relics(relics)
+```
+
+### 11.4 攻击类型详细说明
+
+| 类型 | 特征 | 遗物修饰方向 | 实现状态 |
+|------|------|--------------|---------|
+| **PROJECTILE** | 有飞行轨迹，可穿透/弹射 | 数量+1、穿透+1、速度、大小 | ✅ 基本实现 |
+| **MELEE** | 以玩家为中心，瞬间或短延时 | 范围+%、角度、伤害倍率 | ⬜ 待实现 |
+| **SPELL** | 远程无飞行，直接命中或短延迟 | 范围+%、伤害+%、目标数 | ⬜ 待实现 |
+| **DURATION** | 放置后持续生效 | 持续时间+、tick频率、范围+% | ⬜ 待实现 |
+| **SUMMON** | 生成宠物协助攻击 | 数量+1、持续时间+、伤害+% | ⬜ 待实现 |
+
+### 11.5 AttackExecutor 执行流程
+
+```gdscript
+# 1. 骰子投掷 → DiceEntity.rolled 信号
+# 2. Player._on_dice_rolled() 接收信号
+# 3. 获取 DiceData.get_attack_effect() → AttackEffect
+# 4. AttackExecutor.create_executor(effect) → 创建对应执行器
+# 5. executor.execute(face, source, effect, relics) → 执行攻击
+```
+
+**优先级**：
+- 新系统优先（`attack_effect != null`）
+- 旧系统 fallback（`attack_type` 枚举，向后兼容）
+
+### 11.6 元素反应系统（Phase 2）
+
+**设计**：事件驱动 + 组件化
+
+```
+EnemyBase
+  └── StatusComponent  # 管理敌人身上的元素状态
+
+EventBus
+  └── element_triggered(element, target, source)  # 元素伤害事件
+
+ReactionTable (static)
+  └── reactions 字典  # 数据驱动的反应配置
+```
+
+**反应示例**：
+- 冰冻的敌人被火焰命中 → 冰火爆炸（范围伤害）
+- 感电的敌人被冰/毒命中 → 电弧攻击附近敌人
+- 燃烧的敌人死亡 → 爆炸伤害周围敌人
+
+### 11.7 DiceData 兼容性
+
+`DiceData` 新增 `attack_effect: AttackEffect` 属性，同时保留旧 `attack_type` 枚举。
+
+`get_attack_effect()` 方法：
+- 如果配置了新系统的 `AttackEffect`，直接使用
+- 否则根据旧 `attack_type` 创建对应的 `AttackEffect`（fallback）
+
+**迁移路径**：
+1. 现有骰子继续用 `attack_type`（自动创建 `AttackEffect`）
+2. 新骰子在编辑器中直接配置 `attack_effect`
+3. 后续逐步迁移旧骰子到新系统
+
+---
+
+## 十二、开发规范补充
+
+### 12.1 攻击效果创建流程
+
+```
+新增一种攻击效果:
+  1. 创建 .tres Resource（继承对应 Effect 类）
+     - 右键 → New Resource → 选择 ProjectileEffect/MeleeEffect/...
+  2. 在编辑器中配置属性（伤害/速度/范围等）
+  3. 在 DiceData 的 attack_effect 属性中引用此 Resource
+  4. 完成，无需改代码
+```
+
+### 12.2 遗物修饰规范
+
+遗物通过 `RelicData` 的 `affected_effect_types` 和 `affected_elements` 数组精确控制影响范围。
+
+**示例**：
+```gdscript
+# 仅影响投射物的遗物
+affected_effect_types = [AttackEffect.EffectType.PROJECTILE]
+
+# 影响所有火元素攻击的遗物
+affected_elements = [&"fire"]
+
+# 影响所有类型和元素的遗物（空数组 = 影响所有）
+affected_effect_types = []
+affected_elements = []
+```

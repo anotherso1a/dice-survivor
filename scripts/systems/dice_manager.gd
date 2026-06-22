@@ -63,6 +63,7 @@ static var _mat_flame: DiceMaterial
 static var _mat_glass: DiceMaterial
 static var _mat_lead: DiceMaterial
 static var _mat_cursed: DiceMaterial
+static var _mat_mountain: DiceMaterial
 
 
 ## 获取内置材质（快捷方式）
@@ -74,6 +75,7 @@ static func get_material(key: String) -> DiceMaterial:
 		"glass": return _mat_glass
 		"lead": return _mat_lead
 		"cursed", "curse": return _mat_cursed
+		"mountain", "rock": return _mat_mountain
 		_: return _mat_standard
 
 
@@ -84,6 +86,7 @@ func _init() -> void:
 	_mat_flame  = _make_material("火焰", DiceMaterial.PipStyle.FLAME, Color(0.30, 0.10, 0.05), "rare")
 	_mat_frost  = _make_material("冰霜", DiceMaterial.PipStyle.FROST, Color(0.10, 0.18, 0.30), "rare")
 	_mat_cursed = _make_material("诅咒", DiceMaterial.PipStyle.CURSED, Color(0.25, 0.12, 0.12), "epic")
+	_mat_mountain = _make_material("山岳", DiceMaterial.PipStyle.MOUNTAIN, Color(0.15, 0.12, 0.08), "rare")
 
 
 # ========== 获取预设骰子（保持原有 API 兼容）=========
@@ -100,6 +103,10 @@ func get_standard_d6() -> DiceData:
 		_make_face(6, 3, false),
 	]
 	_set_face_indices(d)
+	## 枪手角色：穿透子弹攻击
+	d.attack_type = DiceData.AttackType.PENETRATING_BULLET
+	## 新系统：配置投射物效果
+	d.attack_effect = _make_standard_bullet_effect()
 	d.gamble_faces = [
 		_make_gamble_face(1, 1, "烂"),
 		_make_gamble_face(2, 2, "烂"),
@@ -154,6 +161,8 @@ func get_fire_d6() -> DiceData:
 		_make_face(6, 2, false),
 	]
 	_set_face_indices(d)
+	## 新系统：火焰投射物（点燃敌人）
+	d.attack_effect = _make_fire_projectile_effect()
 	return d
 
 
@@ -170,6 +179,35 @@ func get_frost_d6() -> DiceData:
 		_make_face(6, 4, false),
 	]
 	_set_face_indices(d)
+	## 新系统：冰霜投射物（减速/冰冻）
+	d.attack_effect = _make_frost_projectile_effect()
+	return d
+
+
+## 山岳 d6（范围攻击）
+func get_mountain_d6() -> DiceData:
+	var d := _new_dice(&"d6_mountain", "山岳骰子 d6", 3.0, -1, _mat_mountain)
+	d.attack_type = DiceData.AttackType.AOE_IMPACT
+	d.aoe_radius = 130.0
+	d.combat_faces = [
+		_make_face(1, 12, false),
+		_make_face(2, 14, false),
+		_make_face(3, 16, false),
+		_make_face(4, 18, false),
+		_make_face(5, 22, false),
+		_make_face(6, 28, true),
+	]
+	_set_face_indices(d)
+	## 新系统：AOE 冲击效果
+	d.attack_effect = _make_aoe_effect(d.aoe_radius)
+	d.gamble_faces = [
+		_make_gamble_face(1, 1, "崩"),
+		_make_gamble_face(2, 2, "裂"),
+		_make_gamble_face(3, 3, "震"),
+		_make_gamble_face(4, 4, "毁"),
+		_make_gamble_face(5, 5, "灭"),
+		_make_gamble_face(6, 6, "天崩"),
+	]
 	return d
 
 
@@ -335,6 +373,58 @@ static func _set_face_indices(d: DiceData) -> void:
 		d.combat_faces[i].face_index = i
 
 
+# ========== AttackEffect 工厂方法（新系统）==========
+
+## 创建标准子弹效果（枪手角色）
+static func _make_standard_bullet_effect() -> ProjectileEffect:
+	var e := ProjectileEffect.new()
+	e.effect_name = "穿透子弹"
+	e.base_damage = 0
+	e.projectile_count = 1
+	e.penetration = 1
+	e.speed = 500.0
+	return e
+
+
+## 创建火焰骰子投射物效果（点燃敌人）
+static func _make_fire_projectile_effect() -> ProjectileEffect:
+	var e := ProjectileEffect.new()
+	e.effect_name = "火焰投射物"
+	e.base_damage = 0
+	e.projectile_count = 1
+	e.penetration = 0
+	e.speed = 500.0
+	e.burn_duration = 2.0
+	e.burn_tick_interval = 0.5
+	e.burn_damage = 1
+	return e
+
+
+## 创建冰霜骰子投射物效果（减速/冰冻）
+static func _make_frost_projectile_effect() -> ProjectileEffect:
+	var e := ProjectileEffect.new()
+	e.effect_name = "冰霜投射物"
+	e.base_damage = 0
+	e.projectile_count = 1
+	e.penetration = 0
+	e.speed = 550.0
+	e.freeze_chance = 0.02  # 2% 基础冰冻概率
+	e.freeze_duration = 2.0
+	e.slow_duration = 2.0
+	e.slow_factor = 0.5
+	return e
+
+
+## 创建山岳骰子 AOE 冲击效果
+static func _make_aoe_effect(radius: float) -> SpellEffect:
+	var e := SpellEffect.new()
+	e.effect_name = "山岳冲击"
+	e.base_damage = 0
+	e.aoe_radius = radius
+	e.delay = 0.2
+	return e
+
+
 ## 快速创建一个 DiceMaterial 材质资源
 ##
 ## 这是材质创建的底层函数，在 _init() 里被调用 6 次，创建 6 种内置材质。
@@ -385,4 +475,8 @@ static func _make_material(name: String, pip_style: DiceMaterial.PipStyle, base_
 		DiceMaterial.PipStyle.CURSED:
 			m.pip_color = Color(0.70, 0.25, 0.25)
 			m.crit_pip_color = Color(1.0, 0.30, 0.30)
+		DiceMaterial.PipStyle.MOUNTAIN:
+			m.pip_color = Color(0.55, 0.45, 0.30)
+			m.crit_pip_color = Color(1.0, 0.70, 0.15)
+			m.border_color = Color(0.35, 0.25, 0.15)
 	return m
